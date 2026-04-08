@@ -1,11 +1,10 @@
-# Этот код уже есть в шаблоне. Используйте его в своей работе, для отладки. В ответ добавлять этот код не нужно
-
 import sys
 import io
 import contextlib
 from itertools import cycle
 import datetime
 from flask import Flask, jsonify, request
+app = Flask(__name__)
 
 status_lst = ["cancelled", "completed", "in_progress", "pending"]
 priority_lst = ["high", "low", "medium"]
@@ -36,33 +35,56 @@ def get_task_list():
     return tasks_lst
 
 tasks_lst = get_task_list()
-from flask import Flask, jsonify, request
-import datetime
 
-app = Flask(__name__)
-# Этот код уже есть в шаблоне. Используйте его в своей работе, для отладки. В ответ добавлять этот код не нужно
-# ... (код инициализации tasks_lst) ...
+# ---------- Helper functions ----------
+def validate_status(status: str) -> tuple[bool, str | None]:
+    """Validate task status. Returns (is_valid, error_message)."""
+    if status not in status_lst:
+        return False, "Поле `status` невалидно"
+    return True, None
 
-from flask import Flask, jsonify, request
-import datetime
+def validate_priority(priority: str) -> tuple[bool, str | None]:
+    """Validate task priority. Returns (is_valid, error_message)."""
+    if priority not in priority_lst:
+        return False, "Поле `priority` невалидно"
+    return True, None
 
-app = Flask(__name__)
+def get_task_by_id(task_id: int) -> dict | None:
+    """Return task dict if found, else None."""
+    for task in tasks_lst:
+        if task["id"] == task_id:
+            return task
+    return None
 
-# tasks_lst уже заполнен данными из get_task_list() (id от 1 до 20)
+def safe_sort_key(task: dict, field: str):
+    """
+    Return a sortable key for the given field.
+    Handles None values for string and datetime fields.
+    """
+    value = task.get(field)
+    if value is None:
+        # For datetime fields, treat None as the minimum possible datetime
+        if field in ("created_at", "updated_at", "deleted_at"):
+            return datetime.datetime.min
+        # For string fields (including title, description, status, priority)
+        return ""
+    return value
 
+def parse_offset(offset_str: str) -> int:
+    """Convert offset to non-negative integer."""
+    try:
+        offset = int(offset_str)
+        return max(offset, 0)
+    except (ValueError, TypeError):
+        return 0
 
+# ---------- Routes ----------
 @app.route("/api/v1/tasks", methods=["GET"])
 def get_tasks_lst():
-    # Get query parameters
+    # Query parameters
     query = request.args.get("query", "").strip()
     order = request.args.get("order", "id")
-    offset = request.args.get("offset", 0)
-
-    # Convert offset to int
-    try:
-        offset = int(offset)
-    except ValueError:
-        offset = 0
+    offset = parse_offset(request.args.get("offset", 0))
 
     # Start with all tasks
     tasks = tasks_lst[:]
@@ -82,18 +104,17 @@ def get_tasks_lst():
         sort_field = order[1:]
         reverse = True
 
-    # Ensure sort_field exists in task dict (default to "id")
-    if sort_field not in tasks[0] if tasks else {}:
+    # Fallback to "id" if sort_field does not exist in tasks
+    if tasks and sort_field not in tasks[0]:
         sort_field = "id"
 
-    tasks.sort(key=lambda x: x.get(sort_field), reverse=reverse)
+    # Use safe_sort_key to handle None values
+    tasks.sort(key=lambda t: safe_sort_key(t, sort_field), reverse=reverse)
 
-    # Pagination: offset and limit 10
-    tasks = tasks[offset:]
-    tasks = tasks[:10]  # ограничение вывода 10 задачами
+    # Pagination: offset + limit 10
+    tasks = tasks[offset:offset + 10]
 
     return jsonify({"tasks": tasks})
-
 
 @app.route("/api/v1/tasks/<task_id>", methods=["GET"])
 def get_tasks(task_id):
@@ -102,21 +123,18 @@ def get_tasks(task_id):
     except ValueError:
         return jsonify({"error": "Задача не найдена"}), 404
 
-    for task in tasks_lst:
-        if task["id"] == task_id:
-            return jsonify(task)
-
-    return jsonify({"error": "Задача не найдена"}), 404
-
+    task = get_task_by_id(task_id)
+    if task is None:
+        return jsonify({"error": "Задача не найдена"}), 404
+    return jsonify(task)
 
 @app.route("/api/v1/tasks", methods=["POST"])
 def post_tasks():
     data = request.get_json()
-    # Пустой JSON или отсутствие данных -> ошибка
     if data is None or data == {}:
         return jsonify({"error": "Отсутствуют данные JSON"}), 400
 
-    # Validate required fields
+    # Required fields
     if "title" not in data:
         return jsonify({"error": "Пропущен обязательный параметр `title`"}), 400
     if "description" not in data:
@@ -127,13 +145,13 @@ def post_tasks():
     status = data.get("status", "pending")
     priority = data.get("priority", "medium")
 
-    # Validate status if provided
-    if status not in ["cancelled", "completed", "in_progress", "pending"]:
-        return jsonify({"error": "Поле `status` невалидно"}), 400
-
-    # Validate priority if provided
-    if priority not in ["high", "low", "medium"]:
-        return jsonify({"error": "Поле `priority` невалидно"}), 400
+    # Validate optional fields
+    valid, err_msg = validate_status(status)
+    if not valid:
+        return jsonify({"error": err_msg}), 400
+    valid, err_msg = validate_priority(priority)
+    if not valid:
+        return jsonify({"error": err_msg}), 400
 
     # Generate new id
     new_id = max((task["id"] for task in tasks_lst), default=0) + 1
@@ -153,7 +171,6 @@ def post_tasks():
     tasks_lst.append(new_task)
     return jsonify(new_task), 200
 
-
 @app.route("/api/v1/tasks/<task_id>", methods=["DELETE"])
 def delete_tasks(task_id):
     try:
@@ -161,16 +178,15 @@ def delete_tasks(task_id):
     except ValueError:
         return jsonify({"error": "Задача не найдена"}), 404
 
-    for task in tasks_lst:
-        if task["id"] == task_id:
-            # Soft delete: set status to "cancelled" and deleted_at to now
-            task["status"] = "cancelled"
-            task["deleted_at"] = datetime.datetime.now().isoformat()
-            task["updated_at"] = datetime.datetime.now().isoformat()
-            return jsonify(task), 200
+    task = get_task_by_id(task_id)
+    if task is None:
+        return jsonify({"error": "Задача не найдена"}), 404
 
-    return jsonify({"error": "Задача не найдена"}), 404
-
+    # Soft delete
+    task["status"] = "cancelled"
+    task["deleted_at"] = datetime.datetime.now().isoformat()
+    task["updated_at"] = datetime.datetime.now().isoformat()
+    return jsonify(task), 200
 
 @app.route("/api/v1/tasks/<task_id>", methods=["PATCH"])
 def patch_tasks(task_id):
@@ -183,35 +199,30 @@ def patch_tasks(task_id):
     except ValueError:
         return jsonify({"error": "Задача не найдена"}), 404
 
-    # Find the task
-    target_task = None
-    for task in tasks_lst:
-        if task["id"] == task_id:
-            target_task = task
-            break
-
-    if target_task is None:
+    task = get_task_by_id(task_id)
+    if task is None:
         return jsonify({"error": "Задача не найдена"}), 404
 
     # Validate status if present
-    if "status" in data and data["status"] not in ["cancelled", "completed", "in_progress", "pending"]:
-        return jsonify({"error": "Поле `status` невалидно"}), 400
+    if "status" in data:
+        valid, err_msg = validate_status(data["status"])
+        if not valid:
+            return jsonify({"error": err_msg}), 400
 
     # Validate priority if present
-    if "priority" in data and data["priority"] not in ["high", "low", "medium"]:
-        return jsonify({"error": "Поле `priority` невалидно"}), 400
+    if "priority" in data:
+        valid, err_msg = validate_priority(data["priority"])
+        if not valid:
+            return jsonify({"error": err_msg}), 400
 
     # Apply updates
-    allowed_fields = ["title", "description", "status", "priority"]
+    allowed_fields = {"title", "description", "status", "priority"}
     for field in allowed_fields:
         if field in data:
-            target_task[field] = data[field]
+            task[field] = data[field]
 
-    # Update updated_at timestamp
-    target_task["updated_at"] = datetime.datetime.now().isoformat()
-
-    return jsonify(target_task), 200
-
+    task["updated_at"] = datetime.datetime.now().isoformat()
+    return jsonify(task), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
