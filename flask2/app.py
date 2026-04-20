@@ -108,16 +108,11 @@ def index():
         
         files_info = load_files_info()
 
-        duplicate_found = False
         for file_id, file_data in files_info.items():
             if file_data.get('md5') == file_md5:
-                duplicate_found = True
                 flash(f'Файл уже существует! Оригинальное имя: {file_data["user_filename"]}, '
                       f'загружен: {file_data["upload_date"]}', 'warning')
-                break
-        
-        if duplicate_found:
-            return redirect(url_for('index'))
+                return redirect(url_for('index'))
         
         try:
             save_info = save_file_with_uuid(file, original_filename)
@@ -128,7 +123,7 @@ def index():
                 'upload_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'file_size': os.path.getsize(save_info['save_path']),
                 'file_extension': os.path.splitext(original_filename)[1].lower(),
-                'mime_type': mimetypes.guess_type(original_filename)[0] or 'unknown',
+                'mime_type': mimetypes.guess_type(original_filename)[0] or None,
                 'md5': file_md5,
                 'server_path': f"uploads/{save_info['relative_path']}",
                 'full_save_path': save_info['save_path'],
