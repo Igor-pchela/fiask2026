@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Авторизация{% endblock %}
+
+{% block content %}
+<h2>Авторизация</h2>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+    
+    <div class="form-group">
+        {{ form.username.label }}
+        {{ form.username(size=32) }}
+        {% for error in form.username.errors %}
+            <span class="error-message">{{ error }}</span>
+        {% endfor %}
+    </div>
+    
+    <div class="form-group">
+        {{ form.password.label }}
+        {{ form.password(size=32) }}
+        {% for error in form.password.errors %}
+            <span class="error-message">{{ error }}</span>
+        {% endfor %}
+    </div>
+    
+    <div class="form-group">
+        {{ form.submit(class="btn") }}
+    </div>
+</form>
+
+<div class="info-box">
+    <h4>Информация</h4>
+    <p>Демо-администратор:</p>
+    <p>Логин: admin</p>
+    <p>Пароль: Admin123!</p>
+    <hr>
+    <p>Только авторизованные пользователи могут создавать новые учётные записи.</p>
+</div>
+{% endblock %}
