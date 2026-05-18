@@ -50,10 +50,10 @@ def init_db():
             print("=" * 50)
             print("База данных успешно инициализирована!")
             print("=" * 50)
-            print("\n📝 Тестовые пользователи:")
+            print(" Тестовые пользователи:")
             for user in created_users:
                 print(f"  • Логин: {user.username}")
-            print("\n🔑 Пароли для всех тестовых пользователей:")
+            print(" Пароли для всех тестовых пользователей:")
             print("  • alex: pass123")
             print("  • maria: pass456")
             print("  • john: pass789")

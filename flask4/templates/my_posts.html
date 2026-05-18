@@ -1,59 +1,59 @@
 {% extends "base.html" %}
 
-{% block title %}Мои записи - Блог{% endblock %}
+{% block title %}Мои записи{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">📋 Мои записи</h1>
-
-{% if posts %}
-    <div class="list-group">
-        {% for post in posts %}
-        <div class="list-group-item list-group-item-action">
-            <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">
-                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="text-decoration-none">
-                        {{ post.title }}
-                    </a>
-                    {% if post.is_private %}
-                        <span class="badge private-badge ms-2">🔒 Приватная</span>
-                    {% endif %}
-                </h5>
-                <small>{{ post.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
-            </div>
-            <p class="mb-1 text-muted">{{ post.content[:150] }}{% if post.content|length > 150 %}...{% endif %}</p>
-            <div class="mt-2">
-                <a href="{{ url_for('edit_post', post_id=post.id) }}" class="btn btn-sm btn-warning">✏️ Редактировать</a>
-                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ post.id }}">
-                    🗑️ Удалить
-                </button>
-            </div>
-        </div>
-        
-        <!-- Модальное окно для каждого поста -->
-        <div class="modal fade" id="deleteModal{{ post.id }}" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Подтверждение удаления</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="card">
+    <div class="card-header">
+        <h2>Мои записи</h2>
+    </div>
+    <div class="card-body">
+        {% if posts %}
+            {% for post in posts %}
+            <div style="border-bottom: 1px solid #e0e0e0; padding: 1rem 0;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <a href="{{ url_for('view_post', post_id=post.id) }}" style="font-size: 1rem; color: #1a1a1a; text-decoration: none;">
+                            {{ post.title }}
+                        </a>
+                        {% if post.is_private %}
+                            <span class="badge">Приватная</span>
+                        {% endif %}
+                        <div class="text-muted" style="font-size: 0.7rem; margin-top: 0.25rem;">
+                            {{ post.created_at.strftime('%d.%m.%Y %H:%M') }}
+                        </div>
                     </div>
-                    <div class="modal-body">
-                        <p>Вы уверены, что хотите удалить запись "{{ post.title }}"?</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                        <form action="{{ url_for('delete_post', post_id=post.id) }}" method="POST">
-                            <button type="submit" class="btn btn-danger">Удалить</button>
-                        </form>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="{{ url_for('edit_post', post_id=post.id) }}" class="btn" style="padding: 0.25rem 0.75rem;">Редактировать</a>
+                        <button onclick="showModal('deleteModal{{ post.id }}')" class="btn" style="padding: 0.25rem 0.75rem;">Удалить</button>
                     </div>
                 </div>
+                <div style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">
+                    {{ post.content[:100] }}{% if post.content|length > 100 %}...{% endif %}
+                </div>
             </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">У вас пока нет записей.</p>
+        {% endif %}
+    </div>
+    <div class="card-footer">
+        <a href="{{ url_for('create_post') }}" class="btn">Создать запись</a>
+    </div>
+</div>
+
+{% for post in posts %}
+<div id="deleteModal{{ post.id }}" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Подтверждение</h3>
+        <p>Удалить "{{ post.title }}"?</p>
+        <div class="modal-actions">
+            <button onclick="hideModal('deleteModal{{ post.id }}')" class="btn">Отмена</button>
+            <form action="{{ url_for('delete_post', post_id=post.id) }}" method="POST" style="display: inline;">
+                <button type="submit" class="btn">Удалить</button>
+            </form>
         </div>
-        {% endfor %}
     </div>
-{% else %}
-    <div class="alert alert-info">
-        У вас пока нет записей. <a href="{{ url_for('create_post') }}">Создайте первую запись!</a>
-    </div>
-{% endif %}
+</div>
+{% endfor %}
 {% endblock %}
