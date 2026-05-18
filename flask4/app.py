@@ -2,9 +2,9 @@ import sys
 import os
 
 # Добавляем текущую директорию в путь поиска модулей
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+# current_dir = os.path.dirname(os.path.abspath(__file__))
+# if current_dir not in sys.path:
+#     sys.path.insert(0, current_dir)
 
 from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, current_user, login_required
@@ -17,7 +17,7 @@ from forms import LoginForm, RegistrationForm, PostForm
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.urandom(24)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(current_dir, "blog.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///blog.db" # + os.path.join(current_dir, "blog.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Инициализация расширений
