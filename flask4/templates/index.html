@@ -30,7 +30,7 @@
 {% else %}
     <div class="alert alert-info">
         {% if current_user.is_authenticated %}
-            Пока нет записей. <a href="{{ url_for('create_post') }}">Создайте первую!</a>
+            Пока нет записей. <a href="{{ url_for('create_post') }}">Создайте первую запись!</a>
         {% else %}
             Пока нет публичных записей. <a href="{{ url_for('login') }}">Войдите</a> для просмотра приватных.
         {% endif %}

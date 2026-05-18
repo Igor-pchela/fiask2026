@@ -2,13 +2,13 @@ import sys
 import os
 
 # Добавляем текущую директорию в путь поиска модулей
-# current_dir = os.path.dirname(os.path.abspath(__file__))
-# if current_dir not in sys.path:
-#     sys.path.insert(0, current_dir)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
 
 from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, current_user, login_required
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 
 from extensions import db, login_manager
@@ -17,7 +17,15 @@ from forms import LoginForm, RegistrationForm, PostForm
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.urandom(24)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///blog.db" # + os.path.join(current_dir, "blog.db")
+
+# ПУТЬ К БАЗЕ ДАННЫХ В ПАПКЕ INSTANCE
+# Создаем папку instance, если её нет
+instance_path = os.path.join(current_dir, 'instance')
+os.makedirs(instance_path, exist_ok=True)
+
+# База данных в папке instance
+db_path = os.path.join(instance_path, 'blog.db')
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Инициализация расширений
@@ -78,12 +86,12 @@ def logout():
 # Основные маршруты
 @app.route("/")
 def index():
-    # Для авторизованных пользователей показываем все посты
+    # Для авторизованных пользователей показываем НЕудаленные посты
     if current_user.is_authenticated:
-        posts = Post.query.order_by(Post.created_at.desc()).all()
+        posts = Post.query.filter_by(deleted_at=None).order_by(Post.created_at.desc()).all()
     else:
-        # Для анонимных пользователей показываем только публичные посты
-        posts = Post.query.filter_by(is_private=False).order_by(Post.created_at.desc()).all()
+        # Для анонимных пользователей показываем только публичные НЕудаленные посты
+        posts = Post.query.filter_by(is_private=False, deleted_at=None).order_by(Post.created_at.desc()).all()
     
     return render_template("index.html", posts=posts)
 
@@ -91,6 +99,11 @@ def index():
 @app.route("/post/<int:post_id>")
 def view_post(post_id):
     post = Post.query.get_or_404(post_id)
+    
+    # Проверяем, удален ли пост
+    if post.is_deleted:
+        flash("Эта запись была удалена.", "warning")
+        return redirect(url_for("index"))
     
     # Проверяем права доступа к приватному посту
     if post.is_private and not current_user.is_authenticated:
@@ -124,6 +137,11 @@ def create_post():
 def edit_post(post_id):
     post = Post.query.get_or_404(post_id)
     
+    # Проверяем, удален ли пост
+    if post.is_deleted:
+        flash("Нельзя редактировать удаленную запись.", "danger")
+        return redirect(url_for("index"))
+    
     # Проверяем, что пользователь является автором поста
     if post.user_id != current_user.id:
         flash("Вы можете редактировать только свои записи", "danger")
@@ -134,7 +152,7 @@ def edit_post(post_id):
         post.title = form.title.data
         post.content = form.content.data
         post.is_private = form.is_private.data
-        post.updated_at = datetime.utcnow()
+        post.updated_at = datetime.now(timezone.utc)
         db.session.commit()
         flash("Запись успешно обновлена!", "success")
         return redirect(url_for("view_post", post_id=post.id))
@@ -151,20 +169,61 @@ def delete_post(post_id):
         flash("Вы можете удалять только свои записи", "danger")
         return redirect(url_for("index"))
     
-    db.session.delete(post)
+    # Мягкое удаление
+    post.delete()
     db.session.commit()
     flash("Запись успешно удалена!", "success")
     return redirect(url_for("index"))
 
 
+@app.route("/post/<int:post_id>/restore", methods=["POST"])
+@login_required
+def restore_post(post_id):
+    """Восстановление удаленного поста"""
+    post = Post.query.get_or_404(post_id)
+    
+    if post.user_id != current_user.id:
+        flash("Вы можете восстанавливать только свои записи", "danger")
+        return redirect(url_for("index"))
+    
+    post.restore()
+    db.session.commit()
+    flash("Запись успешно восстановлена!", "success")
+    return redirect(url_for("my_posts"))
+
+
 @app.route("/my-posts")
 @login_required
 def my_posts():
+    # Показываем ВСЕ посты пользователя (включая удаленные)
     posts = Post.query.filter_by(user_id=current_user.id).order_by(Post.created_at.desc()).all()
     return render_template("my_posts.html", posts=posts)
 
 
+@app.route("/trash")
+@login_required
+def trash():
+    """Корзина - показывает только удаленные посты"""
+    deleted_posts = Post.query.filter_by(user_id=current_user.id).filter(Post.deleted_at.isnot(None)).order_by(Post.deleted_at.desc()).all()
+    return render_template("trash.html", posts=deleted_posts)
+
+
 if __name__ == "__main__":
     with app.app_context():
+        # Добавляем колонку deleted_at, если её нет
+        import sqlite3
+        db_path = os.path.join(instance_path, 'blog.db')
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            try:
+                cursor.execute("ALTER TABLE posts ADD COLUMN deleted_at DATETIME")
+                conn.commit()
+                print("Добавлена колонка deleted_at в таблицу posts")
+            except sqlite3.OperationalError:
+                pass  # колонка уже существует
+            conn.close()
+        
         db.create_all()
-    app.run(debug=True)
+        print(f"База данных находится по пути: {db_path}")
+    app.run(debug=True)#

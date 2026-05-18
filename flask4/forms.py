@@ -27,3 +27,4 @@ class PostForm(FlaskForm):
     content = TextAreaField('Содержание', validators=[DataRequired(), Length(min=10)])
     is_private = BooleanField('Сделать запись приватной (видна только авторизованным пользователям)')
     submit = SubmitField('Сохранить')
+    #

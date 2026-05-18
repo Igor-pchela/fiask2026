@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Корзина{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>Корзина</h2>
+        <p class="text-muted">Удаленные записи (можно восстановить)</p>
+    </div>
+    <div class="card-body">
+        {% if posts %}
+            {% for post in posts %}
+            <div style="border-bottom: 1px solid #e0e0e0; padding: 1rem 0; opacity: 0.7;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <a href="{{ url_for('view_post', post_id=post.id) }}" style="font-size: 1rem; color: #1a1a1a; text-decoration: none;">
+                            {{ post.title }}
+                        </a>
+                        {% if post.is_private %}
+                            <span class="badge">Приватная</span>
+                        {% endif %}
+                        <div class="text-muted" style="font-size: 0.7rem; margin-top: 0.25rem;">
+                            Удалено: {{ post.deleted_at.strftime('%d.%m.%Y %H:%M') }}
+                        </div>
+                    </div>
+                    <div>
+                        <form action="{{ url_for('restore_post', post_id=post.id) }}" method="POST" style="display: inline;">
+                            <button type="submit" class="btn" style="padding: 0.25rem 0.75rem;">Восстановить</button>
+                        </form>
+                    </div>
+                </div>
+                <div style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">
+                    {{ post.content[:100] }}{% if post.content|length > 100 %}...{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">Корзина пуста.</p>
+        {% endif %}
+    </div>
+    <div class="card-footer">
+        <a href="{{ url_for('my_posts') }}" class="btn">Назад к моим записям</a>
+    </div>
+</div>
+{% endblock %}

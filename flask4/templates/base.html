@@ -301,6 +301,7 @@
                 {% if current_user.is_authenticated %}
                     <a href="{{ url_for('create_post') }}">Создать запись</a>
                     <a href="{{ url_for('my_posts') }}">Мои записи</a>
+                    <a href="{{ url_for('trash') }}">Корзина</a>  
                 {% endif %}
             </div>
             <div class="nav-right">
