@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Задачи</h1>
+    <div>
+        <a href="{{ url_for('tasks', show='my') }}" class="btn {% if show=='my' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Мои</a>
+        <a href="{{ url_for('tasks', show='public') }}" class="btn {% if show=='public' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Публичные</a>
+    </div>
+</div>
+
+<!-- Форма фильтрации -->
+<div class="filter-form">
+    <form method="GET" class="row g-3">
+        <input type="hidden" name="show" value="{{ show }}">
+        <div class="col-md-2">
+            <label class="form-label">Статус</label>
+            <select name="status" class="form-select">
+                <option value="all">Все</option>
+                <option value="new" {% if filters.status=='new' %}selected{% endif %}>Новый</option>
+                <option value="in_progress" {% if filters.status=='in_progress' %}selected{% endif %}>В разработке</option>
+                <option value="done" {% if filters.status=='done' %}selected{% endif %}>Готово</option>
+                <option value="archived" {% if filters.status=='archived' %}selected{% endif %}>Архив</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Приоритет</label>
+            <select name="priority" class="form-select">
+                <option value="all">Все</option>
+                <option value="high" {% if filters.priority=='high' %}selected{% endif %}>Высокий</option>
+                <option value="medium" {% if filters.priority=='medium' %}selected{% endif %}>Средний</option>
+                <option value="low" {% if filters.priority=='low' %}selected{% endif %}>Низкий</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Дедлайн до</label>
+            <input type="date" name="deadline_to" class="form-control" value="{{ filters.deadline_to or '' }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Создана от</label>
+            <input type="date" name="created_from" class="form-control" value="{{ filters.created_from or '' }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Сортировка</label>
+            <select name="sort" class="form-select">
+                <option value="created_desc" {% if filters.sort=='created_desc' %}selected{% endif %}>Новые сначала</option>
+                <option value="created_asc" {% if filters.sort=='created_asc' %}selected{% endif %}>Старые сначала</option>
+                <option value="deadline_asc" {% if filters.sort=='deadline_asc' %}selected{% endif %}>Дедлайн (раньше)</option>
+                <option value="deadline_desc" {% if filters.sort=='deadline_desc' %}selected{% endif %}>Дедлайн (позже)</option>
+                <option value="status" {% if filters.sort=='status' %}selected{% endif %}>По статусу</option>
+                <option value="priority" {% if filters.sort=='priority' %}selected{% endif %}>По приоритету</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">Применить</button>
+        </div>
+    </form>
+</div>
+
+<!-- Список задач -->
+{% if tasks %}
+    {% for task in tasks %}
+        <div class="card task-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h5 class="card-title">
+                        <a href="{{ url_for('view_task', id=task.id) }}">{{ task.title }}</a>
+                        {% if task.priority == 'high' %}
+                            <span class="badge bg-danger">Высокий</span>
+                        {% elif task.priority == 'medium' %}
+                            <span class="badge bg-warning text-dark">Средний</span>
+                        {% else %}
+                            <span class="badge bg-info">Низкий</span>
+                        {% endif %}
+                        {% if task.status == 'new' %}
+                            <span class="badge bg-secondary">Новый</span>
+                        {% elif task.status == 'in_progress' %}
+                            <span class="badge bg-primary">В разработке</span>
+                        {% elif task.status == 'done' %}
+                            <span class="badge bg-success">Готово</span>
+                        {% else %}
+                            <span class="badge bg-dark">Архив</span>
+                        {% endif %}
+                    </h5>
+                    <small class="text-muted">Автор: {{ task.author.username }}</small>
+                </div>
+                <p class="card-text">{{ task.description[:150] }}{% if task.description|length > 150 %}...{% endif %}</p>
+                <div class="text-muted small">
+                    Дедлайн: {{ task.deadline.strftime('%d.%m.%Y') }} | Создана: {{ task.created_at.strftime('%d.%m.%Y %H:%M') }}
+                    {% if not task.is_public %} 🔒 Личная{% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    <!-- Пагинация -->
+    {% if pagination.pages > 1 %}
+    <nav>
+        <ul class="pagination justify-content-center">
+            {% if pagination.has_prev %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('tasks', page=pagination.prev_num, **request.args) }}">←</a></li>
+            {% endif %}
+            {% for page in pagination.iter_pages() %}
+                {% if page %}
+                    <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('tasks', page=page, **request.args) }}">{{ page }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+            {% endfor %}
+            {% if pagination.has_next %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('tasks', page=pagination.next_num, **request.args) }}">→</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+{% else %}
+    <div class="alert alert-info">Задач не найдено.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Результаты поиска по запросу "{{ query }}"</h2>
+{% if results %}
+    {% for task in results %}
+        <div class="card task-card">
+            <div class="card-body">
+                <h5><a href="{{ url_for('view_task', id=task.id) }}">{{ task.title }}</a></h5>
+                <p>{{ task.description[:200] }}...</p>
+                <small>Автор: {{ task.author.username }}, Статус: {{ task.status }}, Приоритет: {{ task.priority }}</small>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-warning">Ничего не найдено.</div>
+{% endif %}
+{% endblock %}

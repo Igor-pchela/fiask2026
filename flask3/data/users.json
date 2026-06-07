@@ -1,0 +1,20 @@
+{
+    "1": {
+        "username": "admin",
+        "password_hash": "scrypt:32768:8:1$hpKTszWeLAA4XNhv$809c4ed0750478ec89256d3a8d3a82bcd86434eadfb30109cff91d2990f3b6c16ba26bb4bb704ec331a89e5a5b77162753b2802625e91c699851a3b55dd57ef9",
+        "registered_at": "2026-05-04 17:24:47",
+        "last_login": "2026-05-18 11:02:26"
+    },
+    "2": {
+        "username": "123",
+        "password_hash": "scrypt:32768:8:1$yUAyud00MYBT80Do$d8fe2b56ca4cf85bd062e2a616c7f8d34031fcb267c8df6bb1cad123af0fda7faeeb8ad8c407647331837973d654f8ca7b2b9acc6ecff294fd11290c8f06a538",
+        "registered_at": "2026-05-04 17:27:00",
+        "last_login": "2026-05-04 17:37:44"
+    },
+    "3": {
+        "username": "User1",
+        "password_hash": "scrypt:32768:8:1$pAuFBrKxYAe5njJI$734a6bb5579a7b14626d4f2af45d88316a8ae631a23fe76f85fe83a61ef490249465d02380026fba057d660169a5b7ddd06dc9680e34e73c325bd8a8fa33de18",
+        "registered_at": "2026-05-18 11:03:58",
+        "last_login": "2026-05-18 11:04:27"
+    }
+}

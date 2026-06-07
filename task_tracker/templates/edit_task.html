@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-warning">
+                <h4>Редактирование задачи #{{ task.id }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.title.label(class="form-label") }}
+                        {{ form.title(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows=5) }}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.priority.label(class="form-label") }}
+                            {{ form.priority(class="form-select") }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.deadline.label(class="form-label") }}
+                            {{ form.deadline(class="form-control", type="date") }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch mt-4">
+                                {{ form.is_public(class="form-check-input") }}
+                                {{ form.is_public.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.file.label(class="form-label") }}
+                        {{ form.file(class="form-control") }}
+                        {% if task.file_path %}<small class="text-muted">Текущий файл: {{ task.file_path.split('/')[-1] }}</small>{% endif %}
+                    </div>
+                    {{ form.submit(class="btn btn-primary") }}
+                    <a href="{{ url_for('view_task', id=task.id) }}" class="btn btn-secondary">Назад</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

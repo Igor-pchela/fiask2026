@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-info text-white">
+        <h4>📊 Статистика выполнения задач</h4>
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-6">
+                <div class="card bg-light mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">За последние 7 дней</h5>
+                        <p class="display-4">{{ done_week }}</p>
+                        <p class="card-text">задач со статусом "Готово"</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-light mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">За последние 30 дней</h5>
+                        <p class="display-4">{{ done_month }}</p>
+                        <p class="card-text">задач со статусом "Готово"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
